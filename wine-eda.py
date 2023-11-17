@@ -19,11 +19,8 @@ import matplotlib.pyplot as plt
 import scipy
 import hopsworks
 import pandas as pd
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 # %matplotlib inline
-
-# %%
-project = hopsworks.login()
-fs = project.get_feature_store()
 
 # %%
 wine_df = pd.read_csv("data/wine.csv")
@@ -51,9 +48,6 @@ dummy_variables_type
 # %%
 wine_df = pd.concat([dummy_variables_type,wine_df],axis=1)
 wine_df = wine_df.drop('type',axis=1)
-
-# %%
-wine_df
 
 # %% [markdown]
 # Lets now deal with the features where we have nan values
@@ -118,9 +112,6 @@ wine_df.duplicated().sum()
 # %%
 wine_df.describe().transpose()
 
-# %%
-wine_df['quality'].value_counts().sort_index()
-
 # %% [markdown]
 # ### Exploratory Data Analysis (EDA) on the wine data
 #
@@ -165,32 +156,59 @@ plt.figure(figsize=(9,6))
 sns.heatmap(wine_df.corr(),annot=True,linewidths=0.5,cmap='coolwarm')
 
 # %% [markdown]
-# While there is some correlations we have no reason to suspect multi-colinearity  
-# for any of the variables except two. Type_red and Type_white have a -1 correlation  
-# and therefore one of them should be removed for the model.
+# The first and most important conclusion from this correlation matrix is that  
+# there is a 1:1 correlation between type_white and type_red, this is to be expected  
+# but since there are only two types of wine, it makes sense to remove type_red to  
+# avoid colinearity.
+
+# %% [markdown]
+# #### Removing further colinearity
+# We can use variance inflation factor to further explore the colinearity of our data  
+# a high value of *VIF* leads signifies that the "independent" variables are highly 
+# related and this can in turn lead to worse prediction power in the models.
 
 # %%
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-
-# %%
-wdf2 = wine_df2
-#wdf2 = wdf2.drop('quality',axis=1)
-wdf2 = wdf2[['total sulfur dioxide','free sulfur dioxide','quality']].drop('free sulfur dioxide',axis=1)
-# wdf2 = wdf2.drop('type_red',axis=1)
-# wdf2 = wdf2.drop('density',axis=1)
-# wdf2 = wdf2.drop('pH',axis=1)
+wdf2 = wine_df.copy()
+wdf2 = wdf2.drop('quality',axis=1)
+# wdf2 = wdf2[['total sulfur dioxide','free sulfur dioxide']]#.drop('free sulfur dioxide',axis=1)
+wdf2 = wdf2.drop('type_red',axis=1)
+wdf2 = wdf2.drop('density',axis=1)
+wdf2 = wdf2.drop('pH',axis=1)
 
 # %%
 vif_data = pd.DataFrame() 
 vif_data["feature"] = wdf2.columns 
   
 # calculating VIF for each feature 
-vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(len(X.columns))]
+vif_data["VIF"] = [variance_inflation_factor(wdf2.values, i) for i in range(len(wdf2.columns))]
 
-vif_data
+vif_data.sort_values('VIF',ascending=False)
+
+# %%
+# plt.figure(figsize=(9,6))
+# sns.heatmap(wine_df.drop(['quality'],axis=1).corr(),annot=True,linewidths=0.5,cmap='coolwarm')
+
+# %%
+# plt.figure(figsize=(9,6))
+# sns.heatmap(wdf2.corr(),annot=True,linewidths=0.5,cmap='coolwarm')
 
 # %% [markdown]
-# This can help us reduce colinearity within the dataset
+# ### Conclusions from looking at the colinearity
+# After looking at the *VIF* values of this dataset, the conclusion is  
+# that the dataset is very very colinear. It makes sense given that many  
+# of the categories are related.
+#
+# Take `fixed acidity`, `volatile acidity`, `citric acid` and `pH`  
+# for example they are all related to acidity, and we can expect that if the  
+# `fixed acidity` goes up then the `pH` value will go down.
+#
+# It goes somewhat beyond the scope of this assignment to further break  
+# down this analysis, but I think spending time on this in particular can be  
+# very helpful for model generation in the future.
+#
+# The conclusions on a level that is reasonable to this report is that `pH`  
+# is highly colinear and `density` as well. These two features could be  
+# removed, lets look at the rest of the EDA first.
 
 # %% [markdown]
 # Next step is to look into the correlations with the target value specifically
@@ -219,11 +237,7 @@ significance_df = pd.DataFrame()
 significance_df['feature'] = feature_cols
 significance_df['correlation with quality'] = corrs
 significance_df['p value of correlation'] = pvalues
-significance_df
-
-# %%
-From what we can see there are a number of the correlations that are not significant  
-We can remove these from the featurelist as they will probably not help the model.
+significance_df.sort_values('p value of correlation')
 
 # %%
 significance_df['p > 0.05'] = [p > 0.05 for p in pvalues]
@@ -241,9 +255,8 @@ significance_df[significance_df['p > 0.001']]
 # #### Based on the above we can notice the following
 # The features `sulphates` and `ph` have a low correlation with quality and  
 # this correlation is not considered significant at the 99,9 % confidence level.  
-# It `could be removed`, but this is probably to be decided on the validation set.
-#
-# However, it is not obvious what should be removed.
+# They could be removed, especially `pH` that was shown to be highly colinear  
+# as well
 
 # %% [markdown]
 # Here we can pairplot them as well, however, it seems quite unneccessary since it is  
@@ -254,9 +267,54 @@ significance_df[significance_df['p > 0.001']]
 #
 
 # %%
-features_to_look_into = ['alcohol','volatile acidity'] + ['quality']
+features_to_look_into = ['alcohol','volatile acidity','chlorides'] + ['quality']
 
+# g = sns.PairGrid(wine_df, hue='quality', palette='GnBu_d',diag_sharey=False, corner=True)
 g = sns.PairGrid(wine_df[features_to_look_into], hue='quality', palette='GnBu_d',diag_sharey=False, corner=True)
-g.map_lower(sns.scatterplot)
+g.map_lower(sns.scatterplot,marker='.')
 g.map_diag(sns.kdeplot,multiple="stack")
 g.add_legend()
+
+# %% [markdown]
+# ## Conclusions on the EDA
+#
+# Features to be removed: type_red
+#
+# Features that could be removed: density,pH based on VIF & pH, sulphates based on pearson corr p value
+# Decisions on the features above:
+# * **Keep** *Density*, has very high VIF but atleast high correlation and low p-value
+# * **Remove** *pH* based on very high VIF, low correlation and high p-value
+# * **Remove** *sulphates* based on medium high VIF, low correlation and high p-value
+#
+#
+# Extra feature engineering and EDA should spend time on this:
+# * Handling the skewed target value group
+# * Spending time on breaking up Collinearity, by dropping or changing some features
+# * Investigating if data should be scaled and reweighted
+
+# %%
+wine_df = wine_df.drop(['type_red','pH','sulphates'],axis=1)
+
+# %% [markdown]
+# ### Insert our Wine DataFrame into a FeatureGroup
+# Let's write our historical wine feature values and labels to a feature group.
+# When you write historical data, this process is called `backfilling`.
+
+# %%
+project = hopsworks.login()
+fs = project.get_feature_store()
+
+# %%
+# Rename columns in order to fit in with hopsworks conventions
+cols_no_spaces = [col.replace(' ','_') for col in wine_df.columns]
+wine_df.columns = cols_no_spaces
+feature_cols_no_spaces = wine_df.drop('quality',axis=1).columns
+
+# %%
+wine_fg = fs.get_or_create_feature_group(
+    name="wine",
+    version=1,
+    primary_key=feature_cols_no_spaces,
+    description="Wine quality dataset")
+
+wine_fg.insert(wine_df)
