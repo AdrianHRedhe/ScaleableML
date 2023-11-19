@@ -1,1 +1,6 @@
 .env
+.ipynb_checkpoints
+**/*.ipynb_checkpoints
+**/*.ipynb
+lab1/wine-workdir
+hidden
