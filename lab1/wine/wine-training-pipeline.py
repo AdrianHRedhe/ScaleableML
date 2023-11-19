@@ -19,7 +19,7 @@ import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 import seaborn as sns
@@ -111,8 +111,8 @@ print(accs)
 print(f1s)
 
 # %%
-n_max_class = y_val.reset_index().groupby('quality').count()['index'].max()
-n_total = len(y_val)
+n_max_class = y_test.reset_index().groupby('quality').count()['index'].max()
+n_total = len(y_test)
 benchmark = n_max_class/n_total
 
 print(benchmark)
