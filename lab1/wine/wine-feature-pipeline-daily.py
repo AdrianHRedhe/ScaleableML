@@ -61,7 +61,6 @@ def g():
 
     wine_fg = fs.get_feature_group(name="wine",version=1)
     wine_df = wine_fg.read()
-    wine_df.to_csv('winedf.csv')
 
     random_wine_df = get_random_wine(wine_df)
 
