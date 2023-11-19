@@ -88,6 +88,19 @@ def g():
     predictions = history_df[['prediction']]
     labels = history_df[['label']]
 
+    print("Number of different quality predictions to date: " + str(predictions.value_counts().count()))
+    results = confusion_matrix(labels, predictions)
+
+    rows = [f'True_{classNumber}' for classNumber in range(3,10)]
+    cols = [f'Pred_{classNumber}' for classNumber in range(3,10)]
+    
+    confusion_matrix_df = pd.DataFrame(results,rows,cols)
+    g = sns.heatmap(confusion_matrix_df,annot=True,lw=.5)
+    fig = g.get_figure()
+    fig.savefig("images/confusion_matrix.png")
+    dataset_api.upload("images/confusion_matrix.png", "Resources/images", overwrite=True)
+
+
 if __name__ == "__main__":
     if LOCAL == True :
         g()
