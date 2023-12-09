@@ -1,0 +1,8 @@
+evaluate==0.4.1
+jiwer==3.0.3
+librosa==0.10.1
+lyricsgenius==3.0.1
+numpy==1.26.2
+torch==2.1.1
+pytube==15.0.0
+transformers==4.35.2
