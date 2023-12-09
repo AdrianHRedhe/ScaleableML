@@ -40,17 +40,15 @@ That notebook is available [here](https://colab.research.google.com/github/sanch
 
 ## File structure
 ```bash
-├── Feature_Pipeline_Whisper.ipynb  # Here we read the data from hf and turn preprocess and save it to drive
-├── Training_Pipeline_Whisper.ipynb # Fine-tune whisper on the data. Save checkpoints to drive and huggingface.
-├── README.md                       # Describe the contents and goal of the project and how to run it.
-├── requirements.txt                # Describe build dependencies - However this was run in Colab so would recommend to do the same
-├── example.png                     # Example of why it might be a good idea to transcribe on the foreground audio
-└── ws-s-v4-model                   # One of the fine-tuned models.
-    ├── config.json
-    ├── generation_config.json
-    ├── model.safetensors
-    ├── preprocessor_config.json
-    └── training_args.bin
+├── Feature_Pipeline_Whisper.ipynb      <- Here we load the data from hf and turn preprocess and save it to drive
+├── Training_Pipeline_Whisper.ipynb     <- Fine-tune whisper on the data. Save checkpoints to drive and huggingface.
+├── README.md                           <- Describe the contents and goal of the project and how to run it.
+├── example.png                         <- Example of why it might be a good idea to transcribe on the foreground audio
+└── Whisper-Transcribe-Swedish-Songs    <- Detailing the HuggingFace Gradio application
+    ├── app.py                          <- Runs the application
+    ├── audio.wav                       <- Example Audio file
+    ├── requirements.txt                <- Requirements to run the gradio application
+    └── README.md                       <- Auto-Generated README from huggingface space.
 ```
 
 ## How to run
